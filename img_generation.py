@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr  2 15:58:57 2024
 
-@author: gongzhenghao
-"""
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -12,7 +8,7 @@ import pandas as pd
 import numpy as np
 import plotly.io as pio
 from pandas.api.types import is_string_dtype,is_numeric_dtype,is_object_dtype
-
+from sklearn.metrics import confusion_matrix,precision_recall_curve,roc_curve
 pio.renderers.default = "browser"
 
 """
@@ -55,6 +51,7 @@ def paramSurface(param_df,param_list):
     """
     
     """
+    param_df = param_df.fillna("None")
     if len(param_list) == 3:
         param1,param2,evaluation = param_list
         new_df = param_df.pivot_table(index = param1,columns = param2,values = evaluation)
@@ -131,6 +128,61 @@ def paramViolin(param_df,param_list):
             
 
         return fig
+    
+def pcorrelationMap(total_df,feature_split_index):
+    fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr(),
+                    color_continuous_scale=px.colors.sequential.Viridis)
+    
+    fig.update_layout(title=f'Pearson Correlation Coefficient',
+                    autosize = True,
+                    )
+    return fig
+
+
+def scorrelationMap(total_df,feature_split_index):
+    
+    fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr("spearman"),
+                    color_continuous_scale=px.colors.sequential.Viridis)
+    
+    fig.update_layout(title=f'Spearman Correlation Coefficient',
+                    autosize = True,
+                    )
+    return fig
+
+
+def performance_measure(total_df,prediction_type,param_list,param_combination):
+    target_df = total_df.loc[total_df[list(param_combination.keys())].isin(list(param_combination.values())).all(axis=1), :]
+    if prediction_type == "classification":
+        cm = confusion_matrix(target_df["actual_value"],target_df["predict_value"])
+        fig = px.imshow(cm,x = sorted(target_df["predict_value"].unique()),y = sorted(target_df["actual_value"].unique()),
+                        labels=dict(x="Predict_Value", y="Actual_Value"))
+        return fig
+    elif prediction_type == "multi_classification":
+        cm = confusion_matrix(target_df["actual_value"],target_df["predict_value"])
+        fig = px.imshow(cm,x = sorted(target_df["predict_value"].unique()),y = sorted(target_df["actual_value"].unique()))
+        return fig
+    elif prediction_type == "regression":
+        x = np.arange(len(target_df))
+        fig = go.Figure([go.Scatter(x=x, y=target_df["actual_value"], 
+                   name='actual_value', mode='markers'),
+                         go.Scatter(x=x, y=target_df["predict_value"], 
+                   name='prediction')
+                         ])
+        return fig
+    elif prediction_type == "classification_proba":
+        p,r,t = precision_recall_curve(target_df["actual_value"],target_df["predict_value"])
+        fig = go.Figure([go.Scatter(x=r, y=p)
+                         ])
+        fig.update_layout(title=f'Precision-Recall Curve',
+                        autosize = True,
+                        )
+        
+        return fig
+        
+        
+    
+    
+
     
 
 

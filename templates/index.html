@@ -199,6 +199,16 @@ https://www.tooplate.com/view/2122-nano-folio
                                                 <span class="select-hide-span" >
                                                     <b class="select-show-b"  ></b></span>
                                             </div>
+        <div class=" posirelative select-out-div">
+                                                <select class="m-wrap  " id = "selectedParameter" style="width: 200px; padding: 7px 0;">
+                                                  {% for param_combination in param_dict_list %}
+                                                    <option value="{{param_combination}}">{{param_combination}}</option>
+                                                   {% endfor %}
+                                                  
+                                                </select>
+                                                <span class="select-hide-span" >
+                                                    <b class="select-show-b"  ></b></span>
+                                            </div>
 				<p class="tm-mb-0"> <b>Select Your Hyperparameter which will take in visualization </b></p>
         {% for param in param_list %}
 				<label class="container">{{param}}
@@ -274,6 +284,7 @@ https://www.tooplate.com/view/2122-nano-folio
             var input = {
                 'evaluation': document.getElementById("selectedEvaluation").value,
                 "parameter":[],
+                "param_combination":document.getElementById("selectedParameter").value,
 
             };
             var elementlist = document.getElementsByClassName('paramCheckBox');
