@@ -58,8 +58,8 @@ def paramSurface(param_df,param_list):
     if len(param_list) == 3:
         param1,param2,evaluation = param_list
         new_df = param_df.pivot_table(index = param1,columns = param2,values = evaluation)
-        y_value = new_df.index.tolist()
-        x_value = new_df.columns.tolist()
+        y_value = [str(i) for i in new_df.index.tolist()]
+        x_value = [str(i) for i in new_df.columns.tolist()]
         z = new_df.to_numpy()
         plate_format = param1 + ": %{y}" + "<br>" + param2 + ": %{x}" + "<br>" + evaluation + ": %{z}"
     
