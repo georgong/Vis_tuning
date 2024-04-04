@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr  1 14:09:52 2024
 
-@author: gongzhenghao
-"""
 from flask import Flask, render_template, request
 import img_generation
 import numpy as np

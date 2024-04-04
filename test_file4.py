@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr  2 11:24:55 2024
-
-@author: gongzhenghao
-"""
 
 import model_vistraining
 import numpy as np

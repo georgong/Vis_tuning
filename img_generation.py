@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr  2 15:58:57 2024
 
-@author: gongzhenghao
-"""
 
 import plotly.express as px
 import plotly.graph_objects as go
