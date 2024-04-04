@@ -11,11 +11,12 @@ import numpy as np
 import pandas as pd
 from operator import methodcaller
 import itertools
-from sklearn.metrics import accuracy_score,f1_score,hinge_loss,recall_score,precision_score,class_likelihood_ratios
+from sklearn.metrics import accuracy_score,f1_score,hinge_loss,recall_score,precision_score
 from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score,max_error
 from sklearn.metrics import roc_auc_score,average_precision_score,top_k_accuracy_score
 from sklearn.metrics import confusion_matrix,precision_recall_curve,roc_curve,brier_score_loss
 import time
+import json as js
 
 #TODO add a attribute called total_history
 #total_history keep record of each k-fold
@@ -24,7 +25,7 @@ import time
 
 
 class Base:
-    def __init__(self,model,parameter_dict,feature=None,target=None,data_generator = None,prediction_type:str = "classification",fit_method:str = "fit",predict_method:str = "predict"):
+    def __init__(self,model,parameter_dict,feature=None,target=None,data_generator = None,prediction_type:str = "classification",fit_method:str = "fit",predict_method:str = "predict",total_history = True):
         """
         
 
@@ -72,6 +73,7 @@ class Base:
         # check if the feature and target are valid
         assert prediction_type in ["classification","multi_classification","regression","classification_proba"],"Find a prediction type not in valid!"
         self.model =  model
+        self.parameter_dict = parameter_dict
         keys, values = zip(*parameter_dict.items())
         self.parameter_dict_list = [dict(zip(keys, v)) for v in itertools.product(*values)]
         self.selected_parameter = self.parameter_dict_list[0]
@@ -79,6 +81,7 @@ class Base:
         self.prediction_type = prediction_type
         self.fit_method = fit_method
         self.predict_method = predict_method
+        self.total_history = "No Total History now!"
         if data_generator == None:
             if isinstance(feature,np.ndarray):
                 self.feature = pd.DataFrame(feature,columns = [f"variable{i}" for i in range(len(feature[0]))])
@@ -146,30 +149,36 @@ class Base:
                 predict_value[k_index == k_fold_mask] = mp(model)
                 actual_value[k_index == k_fold_mask] = test_target
                 
-                
-        
+        if hasattr(self,"total_history"): 
+            k_fold_result = pd.concat((k_fold_feature,pd.DataFrame({"predict_value":predict_value,"actual_value":actual_value})),axis = 1)
+            for param_value in parameter:
+                k_fold_result[param_value] = parameter[param_value]
+            if isinstance(self.total_history,str):
+                self.total_history = k_fold_result
+            else:
+                self.total_history = pd.concat((self.total_history,k_fold_result))
         return pd.concat((k_fold_feature,pd.DataFrame({"predict_value":predict_value,"actual_value":actual_value})),axis = 1)
     
     def evaluation_result(self,df):
         evaluation_dict = {}
         if self.prediction_type == "classification":
-            for func in [accuracy_score,f1_score,hinge_loss,recall_score,precision_score,class_likelihood_ratios]:
-                evaluation_dict[func.__name__] = func(df["actual_value"],df["predict_value"])
+            for func in [accuracy_score,f1_score,hinge_loss,recall_score,precision_score]:
+                evaluation_dict[func.__name__] = np.round(func(df["actual_value"],df["predict_value"]),4)
             
         if self.prediction_type == "regression":
             for func in [mean_absolute_error,mean_squared_error,r2_score,max_error]:
-                evaluation_dict[func.__name__] = func(df["actual_value"],df["predict_value"])
+                evaluation_dict[func.__name__] = np.round(func(df["actual_value"],df["predict_value"]),4)
         
         if self.prediction_type == "multi_classification":
-            evaluation_dict["macro_f1_score"] = f1_score(df["actual_value"],df["predict_value"],average = "macro")
-            evaluation_dict["micro_f1_score"] = f1_score(df["actual_value"],df["predict_value"],average = "micro")
-            evaluation_dict["macro_precision_score"] = precision_score(df["actual_value"],df["predict_value"],average = "macro")
-            evaluation_dict["micro_precision_score"] = precision_score(df["actual_value"],df["predict_value"],average = "micro")
-            evaluation_dict["macro_recall_score"] = recall_score(df["actual_value"],df["predict_value"],average = "macro")
-            evaluation_dict["micro_recall_score"] = recall_score(df["actual_value"],df["predict_value"],average = "micro")
+            evaluation_dict["macro_f1_score"] = np.round(f1_score(df["actual_value"],df["predict_value"],average = "macro"),4)
+            evaluation_dict["micro_f1_score"] = np.round(f1_score(df["actual_value"],df["predict_value"],average = "micro"),4)
+            evaluation_dict["macro_precision_score"] = np.round(precision_score(df["actual_value"],df["predict_value"],average = "macro"),4)
+            evaluation_dict["micro_precision_score"] = np.round(precision_score(df["actual_value"],df["predict_value"],average = "micro"),4)
+            evaluation_dict["macro_recall_score"] = np.round(recall_score(df["actual_value"],df["predict_value"],average = "macro"),4)
+            evaluation_dict["micro_recall_score"] = np.round(recall_score(df["actual_value"],df["predict_value"],average = "micro"),4)
         if self.prediction_type == "classification_proba":
             for func in [roc_auc_score,average_precision_score,brier_score_loss]:
-                evaluation_dict[func.__name__] = func(df["actual_value"],df["predict_value"])
+                evaluation_dict[func.__name__] = np.round(func(df["actual_value"],df["predict_value"]),4)
         
             
         
@@ -191,9 +200,9 @@ class Base:
                 else:
                     self.search_history = pd.concat(((pd.DataFrame(data = result.values(),index = result.keys()).T),self.search_history),axis= 0)
         
-        self.search_history = self.search_history.reset_index(drop = True)
+        self.search_history = self.search_history.reset_index(drop = True).fillna("None")
         self.evaluation_list = list(self.search_history.columns[:-len(self.selected_parameter)])
-        self.param_list = list(self.search_history.columns[-len(self.selected_parameter):])
+        self.param_list = [key for key,value in self.parameter_dict.items() if len(value) > 1]
     
     def RandomSearch(self,search_time = "auto",time_for_each_param = 1,k = 4):
         if search_time == "auto":
@@ -210,20 +219,24 @@ class Base:
                 else:
                     self.search_history = pd.concat(((pd.DataFrame(data = result.values(),index = result.keys()).T),self.search_history),axis= 0)
         
-        self.search_history = self.search_history.reset_index(drop = True)
+        self.search_history = self.search_history.reset_index(drop = True).fillna("None")
         self.evaluation_list = list(self.search_history.columns[:-len(self.selected_parameter)])
-        self.param_list = list(self.search_history.columns[-len(self.selected_parameter):])
+        self.param_list = [key for key,value in self.parameter_dict.items() if len(value) > 1]
     
     
     def open_html_report(self,initiation = True):
         # define the id,class of the iframe
         graph_dict = {"paramSurface":"Hyperparameter",
                       "paramhistogram":"Hyperparameter",
-                      "paramViolin":"Hyperparameter"}
+                      "paramViolin":"Hyperparameter",
+                      "scorrelationMap":"feature",
+                      "pcorrelationMap":"feature",
+                      "performance_measure":"performance"}
         #method_name,class_name
         
         
         html_param = {"evaluation_list":self.evaluation_list,
+                      "param_dict_list":self.parameter_dict_list,
                       "param_list":self.param_list,
                       "graph_dict":graph_dict}
         
@@ -242,10 +255,22 @@ class Base:
             print(json)
             respond_dict = {}
             param_list = json["parameter"] + [json["evaluation"]]
+            param_combination = eval(json["param_combination"])
+            #fix: eval() is dangerous
+            print(type(param_combination))
             for method_name in graph_dict:
-                fig = methodcaller(method_name,self.search_history,param_list)(img_generation)
-                print(type(fig))
-                respond_dict[method_name] = fig.to_html(full_html=False)
+                if graph_dict[method_name] == "Hyperparameter":
+                    fig = methodcaller(method_name,self.search_history,param_list)(img_generation)
+                    print(type(fig))
+                    respond_dict[method_name] = fig.to_html(full_html=False)
+                elif graph_dict[method_name] == "feature":
+                    fig = methodcaller(method_name,self.total_history,len(self.selected_parameter))(img_generation)
+                    respond_dict[method_name] = fig.to_html(full_html=False)
+                elif graph_dict[method_name] == "performance":
+                    fig = methodcaller(method_name,self.total_history,self.prediction_type,param_list,param_combination)(img_generation)
+                    respond_dict[method_name] = fig.to_html(full_html=False)
+                else:
+                    raise Exception("Invalid type from html")
             #fig = img_generation.param_3dsurface(self.search_history, "max_depth", "max_features", json["evaluation"])
             #fig2 = img_generation.histogram_on_param(self.search_history, "max_depth", "max_features", json["evaluation"])
             return respond_dict
@@ -277,6 +302,7 @@ class Base:
             else:
                 return img_generation.visualize_table(self.search_history.sort_values(
                 by=self.search_history.columns[0],ascending = False)).to_html()
+        
         app.run()
         
         
