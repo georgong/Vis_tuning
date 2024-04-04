@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualize Training</title>
+ <!-- https://fontawesome.com/ -->	
+	<link rel="stylesheet" href="{{ url_for('static', filename='fontawesome/css/all.min.css') }}"> 
+	<link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro&display=swap" rel="stylesheet"> <!-- https://fonts.google.com/ -->
+	<link href="{{ url_for('static', filename='css/magnific-popup.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/tooplate-style.css') }}" rel="stylesheet">
+    <style>
+iframe {
+    width: 900px;
+    height: 700px;
+}
+#button {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 5px;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+.button {
+  display: inline-block;
+  padding: 15px 25px;
+  font-size: 24px;
+  cursor: pointer;
+  text-align: center;   
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px #999;
+}
+
+.button:hover {background-color: #3e8e41}
+
+.button:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+posirelative {
+    position: relative;
+}
+
+#selectedEvaluation {
+    border: none;
+  	text-align: center;
+  	text-decoration: none;
+  	display: inline-block;
+  	margin: 4px 2px;
+  	font-size: 15px;
+  	cursor: pointer;
+  	border-radius: 5px;
+  	box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+
+}
+option {
+	background-color: #f9f9f9;
+}
+
+containerCheckbox{
+	  border: none;
+  	text-align: center;
+  	text-decoration: none;
+  	display: inline-block;
+  	margin: 4px 2px;
+  	cursor: pointer;
+  	border-radius: 5px;
+  	box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+
+
+}
+
+checkbox{
+
+}
+.container {
+  display: block;
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-size: 22px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Hide the browser's default checkbox */
+.container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 25px;
+  width: 25px;
+  background-color: #eee;
+}
+
+/* On mouse-over, add a grey background color */
+.container:hover input ~ .checkmark {
+  background-color: #ccc;
+}
+
+/* When the checkbox is checked, add a blue background */
+.container input:checked ~ .checkmark {
+  background-color: #2196F3;
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+/* Show the checkmark when checked */
+.container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* Style the checkmark/indicator */
+.container .checkmark:after {
+  left: 9px;
+  top: 5px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+
+
+
+</style>
+<!--
+
+Tooplate 2122 Nano Folio
+
+https://www.tooplate.com/view/2122-nano-folio
+
+-->
+</head>
+<body>
+	<div class="tm-container-fluid">
+		<section class="tm-site-header tm-flex-center tm-mb-50 tm-bgcolor-3 tm-border-rounded">
+			<button class = "button" id = "gs" value="GridSearch" style="margin-right:450px;margin-bottom:30px" onclick="GridSearch()"><h2>&#20;&#20;&#20;GridSearch&#20;&#20;&#20;</h2></button>
+			<button class = "button" id = "rs" value="RandomSearch" style="margin-right:450px;margin-bottom:30px" onclick="RandomSearch()"><h2>RandomSearch</h2></button>
+			<div><button class = "button" id = "rs" value="RandomSearch" style="margin-right:450px;margin-bottom:30px" onclick="DisplayTable()"><h2>DisplayTable</h2></button></div>
+		</section>
+
+
+
+		<section class="tm-about tm-mb-80 tm-p-50 tm-bgcolor-2 tm-border-rounded">
+			<div class="tm-about-header tm-flex-center">
+				<span class="setleft wid80">
+					
+  	
+                                            
+                                          
+                                          
+
+    	<button class = "button" id = "load" value="select the evaluation" onclick="sendcheckbox()" style="margin-right:50px;"><h2>Visualization</h2>
+    	</button>
+			</div>
+			<div class="tm-about-text">
+				<p class="tm-mb-40"></p>
+				<div class=" posirelative select-out-div">
+                                                <select class="m-wrap  " id = "selectedEvaluation" style="width: 200px; padding: 7px 0;">
+                                                	{% for evaluation in evaluation_list %}
+                                                    <option value="{{evaluation}}">{{evaluation}}</option>
+                                                   {% endfor %}
+  																								
+                                                </select>
+                                                <span class="select-hide-span" >
+                                                    <b class="select-show-b"  ></b></span>
+                                            </div>
+				<p class="tm-mb-0"> <b>Select Your Hyperparameter which will take in visualization </b></p>
+        {% for param in param_list %}
+				<label class="container">{{param}}
+  		<input class = "paramCheckBox" type="checkbox" value = "{{param}}" onclick="checkChosenNumber(this)">
+  		<span class="checkmark"></span>
+			</label>
+				{% endfor %}
+
+			</div>
+		</section>
+
+		<div class="tm-gallery-section tm-mb-80">
+			<ul class="filters-button-group tm-mb-40">
+				<li><a href="#" data-filter=".feature">Feature</a></li>
+				<li><a href="#" data-filter=".Hyperparameter">Hyperparameter</a></li>
+				<li><a href="#" data-filter=".performance">Performance</a></li>
+				<li><a href="#" class="active" data-filter="*">Show All</a></li>
+			</ul>
+			<div class="tm-gallery">		
+		       {% for graph_id, graph_class in graph_dict.items() %}
+		       <div id = "{{graph_id}}" class="tm-gallery-item {{graph_class}}">
+		            <iframe src= "http://127.0.0.1:5000/scatter" class="img-fluid"> </iframe>
+		        </div>
+		       {% endfor %}
+			</div>			
+		</div>
+
+		<section class="tm-contact tm-mb-50 tm-bgcolor-3 tm-border-rounded">
+			TODO: write some short discription and Our information
+			<br>The Website template is from 2020 Nano Folio https://www.tooplate.com
+		</section>
+
+		<footer class="tm-footer">
+			Copyright 2020 Nano Folio - Design: <a rel="sponsored" href="https://www.tooplate.com" class="tm-link-gray">Tooplate</a>
+		</footer>
+	</div>
+
+
+	<script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/imagesloaded.pkgd.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/isotope.pkgd.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/jquery.magnific-popup.min.js') }}"></script>
+
+	<script>
+		$(function(){
+		  	// Init the image gallery
+		  	var $gallery = $(".tm-gallery").isotope({
+		    	itemSelector: ".tm-gallery-item",
+		    	layoutMode: "fitRows"
+		  	});
+		  
+		  	// Layout Isotope after each image loads
+		  	$gallery.imagesLoaded().progress(function() {
+		    	$gallery.isotope("layout");
+		  	});
+
+		  	$(".filters-button-group").on("click", "a", function(e) {
+		  		e.preventDefault();
+			    var filterValue = $(this).attr("data-filter");
+			    $gallery.isotope({ filter: filterValue });
+			    $('.filters-button-group a').removeClass('active');
+			    $(this).addClass('active');
+			});
+
+		  	// Magnific Pop up
+		  	$('.tm-gallery').magnificPopup({
+		  		delegate: 'a',
+			  	type: 'image',
+				  gallery: { enabled: true }
+			});
+		});
+	function sendcheckbox() {
+            var input = {
+                'evaluation': document.getElementById("selectedEvaluation").value,
+                "parameter":[],
+
+            };
+            var elementlist = document.getElementsByClassName('paramCheckBox');
+            for (let i=0;i<elementlist.length;i++){
+            	if(elementlist[i].checked == true){
+            		input["parameter"].push(elementlist[i].value);
+            	}
+            }
+            
+            $.ajax({
+                url: '/graphResult',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify(input),
+                success:function (t){
+                	for (const [key, value] of Object.entries(t)) {
+  											$("#"+key).html(value)
+										}
+
+
+				   	      /*$("#surface").html(t["surface"])*/
+			
+
+				        }
+    });
+  
+  }
+  function checkChosenNumber(th) {
+  	var elementlist = document.getElementsByClassName('paramCheckBox');
+  	var checkCount = 0;
+  	for (let i=0;i<elementlist.length;i++){
+      if(elementlist[i].checked == true){
+        checkCount ++;
+      }
+     }
+    if (checkCount > 2) {
+    	alert("You can only chose two parameters");
+    	th.checked = false;
+
+
+    }
+  }
+  function GridSearch() {
+  	var input = {};
+  	$.ajax({
+
+                url: '/gsCommand',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify(input),
+                success:function (){
+                	location.load()
+				        }
+    });
+  }
+   function RandomSearch() {
+  	var input = {};
+  	$.ajax({
+
+                url: '/rsCommand',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify(input),
+                success:function (){
+                	location.load()
+				        }
+    });
+
+  }
+  function DisplayTable() {
+  	var input = {};
+  	$.ajax({
+
+                url: '/displayCommand',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify(input),
+                success:function (){
+                	location.load()
+				        }
+    });
+
+  }
+
+
+	</script>
+</body>
+</html>
