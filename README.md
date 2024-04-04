@@ -8,5 +8,6 @@ numpy 1.24.3
 flask 2.2.2
 
 see the test_file and test_file2 as examples.
+after running the .py file
 open http://127.0.0.1:5000/index for the visualizing result
 
