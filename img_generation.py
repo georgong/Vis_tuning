@@ -30,7 +30,6 @@ return fig
 def visualize_table(df):
     column_list = list(df.columns)
     df = df.T
-    print(column_list)
     fig = go.Figure(data=[go.Table(header=dict(values = column_list,
                                                align=['left','center'],
                                                font=dict(color='white', size=12),
@@ -65,6 +64,8 @@ def paramSurface(param_df,param_list):
         fig = go.Figure(data=[go.Surface(z=z,y = y_value,x= x_value,
                                         hovertemplate = plate_format
                                          )])
+        fig.update_traces(contours_z=dict(show=True, usecolormap=True,
+                                  highlightcolor="limegreen", project_z=True))
         fig.update_layout(title=f'{evaluation.capitalize()} 3D Surface with {param1.capitalize()} and {param2.capitalize()}',
                         autosize = True,
                         )
@@ -77,6 +78,9 @@ def paramSurface(param_df,param_list):
         param1,evaluation = param_list
         fig = px.density_heatmap(param_df,x = param1,y = evaluation,
                          marginal_y="histogram")
+        fig.update_layout(title=f'density_heatmap of {evaluation} and {param1}',
+                        autosize = True,
+                        )
         return fig
         
         
@@ -88,6 +92,9 @@ def paramhistogram(param_df,param_list):
         param_df  = param_df.fillna("param:None")
         new_df = param_df.melt(id_vars = [param1,param2],value_vars = [evaluation])
         fig = px.histogram(new_df,x = "value",histnorm='probability',facet_row=param1,facet_col = param2)
+        fig.update_layout(title=f'Histogram on {param1},{param2}',
+                        autosize = True,
+                        )
         return fig
     else:
         param1,evaluation = param_list
@@ -96,6 +103,9 @@ def paramhistogram(param_df,param_list):
         fig = px.histogram(new_df,x = "value",histnorm='probability',color = param1)
         fig.update_layout(barmode='overlay')
         fig.update_traces(opacity=0.75)
+        fig.update_layout(title=f'Histogram on {param1}',
+                        autosize = True,
+                        )
         return fig
     
     
@@ -113,6 +123,9 @@ def paramViolin(param_df,param_list):
                         legendgroup=param_value1,scalegroup = param_value1,name="{}:{}".format(param2,param_value1),
                         )
              )
+        fig.update_layout(title=f'Distribution of {evaluation} on {param1},{param2}',
+                        autosize = True,
+                        )
         return fig
             
     else:
@@ -125,6 +138,9 @@ def paramViolin(param_df,param_list):
                             name= "{}:{}".format(param1,param_value),
                             box_visible=True,
                             meanline_visible=True))
+        fig.update_layout(title=f'Distribution of {evaluation} on {param1}',
+                        autosize = True,
+                        )
             
 
         return fig
@@ -133,7 +149,7 @@ def pcorrelationMap(total_df,feature_split_index):
     fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr(),
                     color_continuous_scale=px.colors.sequential.Viridis)
     
-    fig.update_layout(title=f'Pearson Correlation Coefficient',
+    fig.update_layout(title= 'Pearson Correlation Coefficient',
                     autosize = True,
                     )
     return fig
@@ -144,7 +160,7 @@ def scorrelationMap(total_df,feature_split_index):
     fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr("spearman"),
                     color_continuous_scale=px.colors.sequential.Viridis)
     
-    fig.update_layout(title=f'Spearman Correlation Coefficient',
+    fig.update_layout(title= 'Spearman Correlation Coefficient',
                     autosize = True,
                     )
     return fig
@@ -156,10 +172,16 @@ def performance_measure(total_df,prediction_type,param_list,param_combination):
         cm = confusion_matrix(target_df["actual_value"],target_df["predict_value"])
         fig = px.imshow(cm,x = sorted(target_df["predict_value"].unique()),y = sorted(target_df["actual_value"].unique()),
                         labels=dict(x="Predict_Value", y="Actual_Value"))
+        fig.update_layout(title='Confusion Matrix',
+                        autosize = True,
+                        )
         return fig
     elif prediction_type == "multi_classification":
         cm = confusion_matrix(target_df["actual_value"],target_df["predict_value"])
         fig = px.imshow(cm,x = sorted(target_df["predict_value"].unique()),y = sorted(target_df["actual_value"].unique()))
+        fig.update_layout(title="Confusion Matrix",
+                        autosize = True,
+                        )
         return fig
     elif prediction_type == "regression":
         x = np.arange(len(target_df))
@@ -168,11 +190,32 @@ def performance_measure(total_df,prediction_type,param_list,param_combination):
                          go.Scatter(x=x, y=target_df["predict_value"], 
                    name='prediction')
                          ])
+        fig.update_layout(title=f'Residual Plot',
+                        autosize = True,
+                        )
         return fig
     elif prediction_type == "classification_proba":
         p,r,t = precision_recall_curve(target_df["actual_value"],target_df["predict_value"])
-        fig = go.Figure([go.Scatter(x=r, y=p)
+        template = "R:%{x},P:%{y}" +"<br>"+f"{param_combination}"
+        fig = go.Figure([go.Scatter(x=r, y=p,
+                                    hovertemplate = template,
+                                    )
                          ])
+        """
+        if len(param_list)==2:
+            print(param_list)
+            param1,evaluation = param_list
+            param_iter1 = total_df[param1].unique()
+            
+            for param_value in param_iter1:
+                param_combination[param1] = param_value
+                target_df = total_df.loc[total_df[list(param_combination.keys())].isin(list(param_combination.values())).all(axis=1), :]
+                p,r,t = precision_recall_curve(target_df["actual_value"],target_df["predict_value"])
+                fig.add_trace(
+                    go.Scatter(x=r, y=p,
+                              hovertemplate = "R:%{x},P:%{y}" +"<br>"+f"{param_combination}"))
+        
+        """    
         fig.update_layout(title=f'Precision-Recall Curve',
                         autosize = True,
                         )

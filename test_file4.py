@@ -35,7 +35,7 @@ class LogisticRegressionWarpper:
 
 base = model_vistraining.Base(model = LogisticRegressionWarpper,
                               parameter_dict = {"C":[0.1,0.3,0.5,0.7,0.9],
-                                                "penalty":["l2"],
+                                                "penalty":["l2",None],
                                                },
                                         feature = feature,
                                         target = target,

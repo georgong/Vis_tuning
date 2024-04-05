@@ -31,7 +31,7 @@ iframe {
 .button {
   display: inline-block;
   padding: 15px 25px;
-  font-size: 24px;
+  font-size: 15px;
   cursor: pointer;
   text-align: center;   
   text-decoration: none;
@@ -41,6 +41,8 @@ iframe {
   border: none;
   border-radius: 15px;
   box-shadow: 0 9px #999;
+  width: 350px;
+  margin-bottom:15px;
 }
 
 .button:hover {background-color: #3e8e41}
@@ -64,6 +66,20 @@ posirelative {
   	cursor: pointer;
   	border-radius: 5px;
   	box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    margin-bottom: 25px;
+
+}
+#selectedParameter {
+    border: none;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    margin: 4px 2px;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    margin-bottom: 5px;
 
 }
 option {
@@ -167,15 +183,11 @@ https://www.tooplate.com/view/2122-nano-folio
 </head>
 <body>
 	<div class="tm-container-fluid">
-		<section class="tm-site-header tm-flex-center tm-mb-50 tm-bgcolor-3 tm-border-rounded">
-			<button class = "button" id = "gs" value="GridSearch" style="margin-right:450px;margin-bottom:30px" onclick="GridSearch()"><h2>&#20;&#20;&#20;GridSearch&#20;&#20;&#20;</h2></button>
-			<button class = "button" id = "rs" value="RandomSearch" style="margin-right:450px;margin-bottom:30px" onclick="RandomSearch()"><h2>RandomSearch</h2></button>
-			<div><button class = "button" id = "rs" value="RandomSearch" style="margin-right:450px;margin-bottom:30px" onclick="DisplayTable()"><h2>DisplayTable</h2></button></div>
-		</section>
 
 
 
-		<section class="tm-about tm-mb-80 tm-p-50 tm-bgcolor-2 tm-border-rounded">
+
+		<section class="tm-about tm-mb-80 tm-p-50 tm-bgcolor-3 tm-border-rounded">
 			<div class="tm-about-header tm-flex-center">
 				<span class="setleft wid80">
 					
@@ -184,13 +196,16 @@ https://www.tooplate.com/view/2122-nano-folio
                                           
                                           
 
-    	<button class = "button" id = "load" value="select the evaluation" onclick="sendcheckbox()" style="margin-right:50px;"><h2>Visualization</h2>
-    	</button>
+    	<button class = "button" id = "gs" value="GridSearch" style="margin-right:50px;" onclick="GridSearch()"><h2>&#20;&#20;&#20;GridSearch&#20;&#20;&#20;</h2></button>
+      <button class = "button" id = "rs" value="RandomSearch" style="margin-right:50px;" onclick="RandomSearch()"><h2>RandomSearch</h2></button>
+      <button class = "button" id = "rs" value="RandomSearch" style="margin-right:50px;" onclick="DisplayTable()"><h2>DisplayTable</h2></button>
+      <button class = "button" id = "load" value="select the evaluation" onclick="sendcheckbox()" style="margin-right:50px;"><h2>Visualization</h2>
+      </button>
 			</div>
 			<div class="tm-about-text">
 				<p class="tm-mb-40"></p>
 				<div class=" posirelative select-out-div">
-                                                <select class="m-wrap  " id = "selectedEvaluation" style="width: 200px; padding: 7px 0;">
+                                                <select class="m-wrap  " id = "selectedEvaluation" style="width: 400px; padding: 7px 0;">
                                                 	{% for evaluation in evaluation_list %}
                                                     <option value="{{evaluation}}">{{evaluation}}</option>
                                                    {% endfor %}
@@ -200,7 +215,7 @@ https://www.tooplate.com/view/2122-nano-folio
                                                     <b class="select-show-b"  ></b></span>
                                             </div>
         <div class=" posirelative select-out-div">
-                                                <select class="m-wrap  " id = "selectedParameter" style="width: 200px; padding: 7px 0;">
+                                                <select class="m-wrap  " id = "selectedParameter" style="width: 400px; padding: 7px 0;">
                                                   {% for param_combination in param_dict_list %}
                                                     <option value="{{param_combination}}">{{param_combination}}</option>
                                                    {% endfor %}
@@ -209,7 +224,7 @@ https://www.tooplate.com/view/2122-nano-folio
                                                 <span class="select-hide-span" >
                                                     <b class="select-show-b"  ></b></span>
                                             </div>
-				<p class="tm-mb-0"> <b>Select Your Hyperparameter which will take in visualization </b></p>
+				<p class="tm-mb-0" style="margin-bottom:15px;font-size:20px;"> <b>Select Your Hyperparameter which will take in visualization </b></p>
         {% for param in param_list %}
 				<label class="container">{{param}}
   		<input class = "paramCheckBox" type="checkbox" value = "{{param}}" onclick="checkChosenNumber(this)">
@@ -220,7 +235,7 @@ https://www.tooplate.com/view/2122-nano-folio
 			</div>
 		</section>
 
-		<div class="tm-gallery-section tm-mb-80">
+		<div id="graphSection" class="tm-gallery-section tm-mb-80" hidden="true">
 			<ul class="filters-button-group tm-mb-40">
 				<li><a href="#" data-filter=".feature">Feature</a></li>
 				<li><a href="#" data-filter=".Hyperparameter">Hyperparameter</a></li>
@@ -242,7 +257,7 @@ https://www.tooplate.com/view/2122-nano-folio
 		</section>
 
 		<footer class="tm-footer">
-			Copyright 2020 Nano Folio - Design: <a rel="sponsored" href="https://www.tooplate.com" class="tm-link-gray">Tooplate</a>
+			This website is edit from Tooplate <a rel="sponsored" href="https://www.tooplate.com" class="tm-link-gray">Tooplate</a>
 		</footer>
 	</div>
 
@@ -281,6 +296,7 @@ https://www.tooplate.com/view/2122-nano-folio
 			});
 		});
 	function sendcheckbox() {
+            document.getElementById("graphSection").hidden = true;
             var input = {
                 'evaluation': document.getElementById("selectedEvaluation").value,
                 "parameter":[],
@@ -300,6 +316,7 @@ https://www.tooplate.com/view/2122-nano-folio
                 contentType: 'application/json',
                 data: JSON.stringify(input),
                 success:function (t){
+                  document.getElementById("graphSection").hidden = false;
                 	for (const [key, value] of Object.entries(t)) {
   											$("#"+key).html(value)
 										}
