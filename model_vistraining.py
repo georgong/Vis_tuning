@@ -248,16 +248,13 @@ class Base:
         @app.route("/graphResult",methods = ["GET","POST"])
         def graph_process():
             json = request.json
-            print(json)
             respond_dict = {}
             param_list = json["parameter"] + [json["evaluation"]]
             param_combination = eval(json["param_combination"])
             #fix: eval() is dangerous
-            print(type(param_combination))
             for method_name in graph_dict:
                 if graph_dict[method_name] == "Hyperparameter":
                     fig = methodcaller(method_name,self.search_history,param_list)(img_generation)
-                    print(type(fig))
                     respond_dict[method_name] = fig.to_html(full_html=False)
                 elif graph_dict[method_name] == "feature":
                     fig = methodcaller(method_name,self.total_history,len(self.selected_parameter))(img_generation)
