@@ -11,13 +11,10 @@ from sklearn.metrics import accuracy_score,f1_score,hinge_loss,recall_score,prec
 from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score,max_error
 from sklearn.metrics import roc_auc_score,average_precision_score,top_k_accuracy_score
 from sklearn.metrics import confusion_matrix,precision_recall_curve,roc_curve,brier_score_loss
+from sklearn.model_selection import train_test_split
 import time
 import json as js
 
-#TODO add a attribute called total_history
-#total_history keep record of each k-fold
-#[hyperparam],[feature],[predicted_val],[actual_val]
-# max_length,
 
 
 class Base:
@@ -93,13 +90,35 @@ class Base:
             self.feature = None
             self.target = None;    
     
-    def k_fold(self,k=4,parameter = None):
+    def train_valid_split(self, data_generator=None):
+        '''
+        Train validation set split that takes into account of the existence of data generator
+
+        If data_generator is given, generate data based on the generator and do train test split, 
+        otherwise, use the given feature and target to do train test split
+
+        '''
+
+        if data_generator != None:
+            iterator = iter(data_generator)
+            train_set,test_set = next(iterator)
+            X_train, y_train = train_set[0], train_set[1]
+            X_valid, y_valid = test_set[0], test_set[1]
+        
+        else:
+            X_train, X_valid, y_train, y_valid = train_test_split(
+                self.feature, self.target, test_size = 0.2, random_state = 0
+                )
+
+        return (X_train, X_valid, y_train, y_valid)
+
+    def k_fold(self, k=4, parameter=None):
         """
-        k_fold_size would be used when using data_generator, it will generate k_fold_size * k data  
-        from data_generator in total
+        k_fold_size would be used when using data_generator, it will generate k_fold_size * k data 
+        from data_generator in total 
         """
         if parameter == None:
-            parameter = self.selected_parameter;
+            parameter = self.selected_parameter
         predict_value = None
         actual_value = None
         
@@ -153,6 +172,7 @@ class Base:
                 self.total_history = k_fold_result
             else:
                 self.total_history = pd.concat((self.total_history,k_fold_result))
+
         return pd.concat((k_fold_feature,pd.DataFrame({"predict_value":predict_value,"actual_value":actual_value})),axis = 1)
     
     def evaluation_result(self,df):
@@ -175,8 +195,6 @@ class Base:
         if self.prediction_type == "classification_proba":
             for func in [roc_auc_score,average_precision_score,brier_score_loss]:
                 evaluation_dict[func.__name__] = np.round(func(df["actual_value"],df["predict_value"]),4)
-        
-            
         
         return evaluation_dict
     
@@ -227,7 +245,10 @@ class Base:
                       "paramViolin":"Hyperparameter",
                       "scorrelationMap":"feature",
                       "pcorrelationMap":"feature",
-                      "performance_measure":"performance"}
+                      "performance_measure":"performance", 
+                      'relief_importance_vis':'feature',
+                      'permutation_importance_vis':'feature'
+                      }
         #method_name,class_name
         
         
@@ -257,7 +278,21 @@ class Base:
                     fig = methodcaller(method_name,self.search_history,param_list)(img_generation)
                     respond_dict[method_name] = fig.to_html(full_html=False)
                 elif graph_dict[method_name] == "feature":
-                    fig = methodcaller(method_name,self.total_history,len(self.selected_parameter))(img_generation)
+                    if 'relief' in method_name:
+                        X_train, X_valid, y_train, y_valid = self.train_valid_split(self.data_generator)
+
+                        fig = methodcaller(method_name, np.vstack([X_train, X_valid]), 
+                                           np.hstack([y_train, y_valid]))(img_generation)
+                    
+                    elif 'permutation' in method_name:
+                        X_train, X_valid, y_train, y_valid = self.train_valid_split(self.data_generator)
+                        # fit the model before perform permutation
+                        mc = methodcaller(self.fit_method,X_train,y_train)
+                        model = mc(self.model(**self.selected_parameter))
+
+                        fig = methodcaller(method_name, model, X_valid, y_valid)(img_generation)
+                    else:
+                        fig = methodcaller(method_name,self.total_history,len(self.selected_parameter))(img_generation)
                     respond_dict[method_name] = fig.to_html(full_html=False)
                 elif graph_dict[method_name] == "performance":
                     fig = methodcaller(method_name,self.total_history,self.prediction_type,param_list,param_combination)(img_generation)

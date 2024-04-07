@@ -9,7 +9,11 @@ import numpy as np
 import plotly.io as pio
 from pandas.api.types import is_string_dtype,is_numeric_dtype,is_object_dtype
 from sklearn.metrics import confusion_matrix,precision_recall_curve,roc_curve
+from sklearn.inspection import permutation_importance
 pio.renderers.default = "browser"
+
+import time
+from skrebate import ReliefF
 
 """
 this py.file provide a series of function for generate the 
@@ -120,7 +124,7 @@ def paramViolin(param_df,param_list):
             for param_value2 in param_iter2:
                 fig.add_trace(go.Violin(x=param_df[param2][(param_df[param2] == param_value2)&(param_df[param1] == param_value1)],
                         y=param_df[evaluation][(param_df[param2] == param_value2)&(param_df[param1] == param_value1)],
-                        legendgroup=param_value1,scalegroup = param_value1,name="{}:{}".format(param2,param_value1),
+                        legendgroup=str(param_value1),scalegroup = str(param_value1),name="{}:{}".format(param2,param_value1),
                         )
              )
         fig.update_layout(title=f'Distribution of {evaluation} on {param1},{param2}',
@@ -144,14 +148,14 @@ def paramViolin(param_df,param_list):
             
 
         return fig
-    
+
 def pcorrelationMap(total_df,feature_split_index):
     fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr(),
                     color_continuous_scale=px.colors.sequential.Viridis)
     
     fig.update_layout(title= 'Pearson Correlation Coefficient',
-                    autosize = True,
-                    )
+                      autosize = True)
+
     return fig
 
 
@@ -163,6 +167,75 @@ def scorrelationMap(total_df,feature_split_index):
     fig.update_layout(title= 'Spearman Correlation Coefficient',
                     autosize = True,
                     )
+    return fig
+
+def relief_importance_vis(feature, target):
+    '''
+    Install Relief package: pip install skrebate
+
+    Relief-based Feature Importance Visualization
+    '''
+
+    r = ReliefF()
+
+    print('Relief Algorithm')
+    start_time = time.time()
+    r.fit(feature, target)
+    print("Take {} ms".format(time.time()-start_time))
+
+    relief_feature_importance = (
+    pd.DataFrame(r.feature_importances_)
+    .reset_index()
+    .rename(columns={'index': 'Feature', 0: 'Feature Importance'})
+    )
+
+    fig = px.bar(relief_feature_importance,
+                x='Feature', 
+                y='Feature Importance', 
+                color='Feature Importance', 
+                color_continuous_scale='algae'
+                )
+    fig.update_xaxes(tickvals=relief_feature_importance['Feature'], tickangle=45)
+    fig.update_layout(
+        title=dict(text="Relif-based Feature Importance"),
+        xaxis_title="Features",
+        yaxis_title='Importance'
+    )
+
+    return fig
+
+def permutation_importance_vis(model, X, y):
+    '''
+    
+    '''
+
+    print('Permutation')
+    start_time = time.time()
+    per_im = permutation_importance(model, X, y)
+    print("Take {} ms".format(time.time()-start_time))
+
+    permu_importance = (
+        pd.DataFrame([per_im.importances_mean, per_im.importances_std]).T
+        .reset_index()
+        .rename(columns={'index': 'Feature', 0: 'Permutation Importance Mean', 1: 'Permutation Importance STD'})
+    )
+
+    fig = px.bar(permu_importance,
+                x='Feature', 
+                y='Permutation Importance Mean', 
+                color='Permutation Importance Mean', 
+                color_continuous_scale='algae', 
+                error_y='Permutation Importance STD', 
+                labels={'Permutation Importance Mean': 'Importance'})
+
+    fig.update_xaxes(tickvals=permu_importance['Feature'], tickangle=45)
+
+    fig.update_layout(
+        title=dict(text="Permutation Feature Importance"), 
+        xaxis_title="Features", 
+        yaxis_title='Importance', 
+    )
+
     return fig
 
 
