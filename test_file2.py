@@ -35,7 +35,7 @@ base = model_vistraining.Base(model = DecisionTreeRegressor,
 
 
 base.GridSearch(time_for_each_param=1)
-base.open_html_report()
+#base.open_html_report()
 
 
         

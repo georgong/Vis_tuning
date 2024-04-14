@@ -14,6 +14,7 @@ pio.renderers.default = "browser"
 
 import time
 from skrebate import ReliefF
+from sklearn.feature_selection import chi2
 
 """
 this py.file provide a series of function for generate the 
@@ -149,8 +150,8 @@ def paramViolin(param_df,param_list):
 
         return fig
 
-def pcorrelationMap(total_df,feature_split_index):
-    fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr(),
+def pcorrelationMap(sample_df):
+    fig = px.imshow(sample_df.corr(),
                     color_continuous_scale=px.colors.sequential.Viridis)
     
     fig.update_layout(title= 'Pearson Correlation Coefficient',
@@ -159,9 +160,9 @@ def pcorrelationMap(total_df,feature_split_index):
     return fig
 
 
-def scorrelationMap(total_df,feature_split_index):
+def scorrelationMap(sample_df):
     
-    fig = px.imshow(total_df.drop("predict_value",axis = 1).iloc[:,:-feature_split_index].corr("spearman"),
+    fig = px.imshow(sample_df.corr("spearman"),
                     color_continuous_scale=px.colors.sequential.Viridis)
     
     fig.update_layout(title= 'Spearman Correlation Coefficient',
@@ -169,12 +170,14 @@ def scorrelationMap(total_df,feature_split_index):
                     )
     return fig
 
-def relief_importance_vis(feature, target):
+def relief_importance_vis(sample_df):
     '''
     Install Relief package: pip install skrebate
 
     Relief-based Feature Importance Visualization
     '''
+    feature = sample_df.drop("actual_value",axis = 1).to_numpy()
+    target = sample_df["actual_value"].to_numpy()
 
     r = ReliefF()
 
@@ -188,6 +191,7 @@ def relief_importance_vis(feature, target):
     .reset_index()
     .rename(columns={'index': 'Feature', 0: 'Feature Importance'})
     )
+    relief_feature_importance["Feature"] = list(sample_df.drop("actual_value",axis = 1).columns)
 
     fig = px.bar(relief_feature_importance,
                 x='Feature', 
@@ -294,6 +298,17 @@ def performance_measure(total_df,prediction_type,param_list,param_combination):
                         )
         
         return fig
+    
+    
+    
+def chi_square_stats(sample_df):
+    feature = sample_df.drop("actual_value",axis = 1).to_numpy()
+    target = sample_df["actual_value"].to_numpy()
+    chi2_stats, p_values = chi2(feature, target)
+    fig  = px.bar(pd.DataFrame({"Feature":list(sample_df.drop("actual_value",axis = 1).columns),
+                         "Chi_stats":chi2_stats}),x = "Feature",y = "Chi_stats")
+    
+    return fig
         
         
     

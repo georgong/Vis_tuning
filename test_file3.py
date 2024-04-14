@@ -8,7 +8,7 @@ import sklearn.datasets as datasets
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree import DecisionTreeRegressor
-
+import pandas as pd
 
 
 
@@ -27,15 +27,17 @@ base = model_vistraining.Base(model = DecisionTreeClassifier,
                                                 "max_depth":[2,4,6,8,10,12],
                                                 "min_samples_split":[2],
                                                 "max_features":["sqrt","log2",0.83]},
-                                        feature = feature,
+                                        feature = pd.DataFrame(feature),
                                         target = target,
-                                        prediction_type="classification")
+                                        prediction_type="classification",
+                                        feature_names = cancer.feature_names
+                                        )
 
 
 
 
 base.GridSearch(time_for_each_param=1)
-base.open_html_report()
+#base.open_html_report()
 
 
         

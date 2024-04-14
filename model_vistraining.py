@@ -18,7 +18,9 @@ import json as js
 
 
 class Base:
-    def __init__(self,model,parameter_dict,feature=None,target=None,data_generator = None,prediction_type:str = "classification",fit_method:str = "fit",predict_method:str = "predict",total_history = True):
+    def __init__(self,model,parameter_dict,feature=None,target=None,
+                 data_generator = None,prediction_type:str = "classification",
+                 fit_method:str = "fit",predict_method:str = "predict",feature_names = None):
         """
         
 
@@ -56,7 +58,7 @@ class Base:
         assert not all([type(data) == type(None) for data in [feature,target,data_generator]]),"feature,target,and data_generator cannot all be None"
         if data_generator == None:
             assert isinstance(feature, np.ndarray) or isinstance(feature, pd.DataFrame),"we currently only accept these two type of feature, maybe accpet more type in future"
-            assert isinstance(feature, np.ndarray) or isinstance(feature, pd.Series),"we currently only accept these two type of target, maybe accpet more type in future"
+            assert isinstance(target, np.ndarray) or isinstance(target, pd.Series),"we currently only accept these two type of target, maybe accpet more type in future"
             assert not any([type(data) == type(None) for data in [feature,target]]),"if using feature and target, you should put both parameters when initiatation"
             assert len(feature) == len(target),f"feature and target has different length,feature:{len(feature)},target:{len(target)}"
             
@@ -74,16 +76,22 @@ class Base:
         self.prediction_type = prediction_type
         self.fit_method = fit_method
         self.predict_method = predict_method
-        self.total_history = "No Total History now!"
+        self.sample_df = "No Sample_df now!"
+        self.feature_names = feature_names
         if data_generator == None:
             if isinstance(feature,np.ndarray):
-                self.feature = pd.DataFrame(feature,columns = [f"variable{i}" for i in range(len(feature[0]))])
+                if isinstance(feature_names,type(None)):
+                    self.feature = pd.DataFrame(feature,columns = [f"variable{i}" for i in range(len(feature[0]))])
+                else:
+                    self.feature = pd.DataFrame(feature,columns = feature_names)
             else:
-                self.feature = feature
+                self.feature = feature.set_axis([f"variable{i}" for i in range(feature.shape[1])],axis = 1)
+                if not isinstance(feature_names,type(None)):
+                    self.feature = feature.set_axis(feature_names, axis=1)
             if isinstance(target,np.ndarray):
                 self.target = target
             else:
-                self.target = target.to_numpy
+                self.target = target.to_numpy()
             self.data_generator = None
         else:
             self.data_generator = data_generator
@@ -144,10 +152,15 @@ class Base:
             predict_value = np.hstack(predict_value)
             actual_value = np.hstack(actual_value)
             k_fold_feature = np.vstack(k_fold_feature)
-            k_fold_feature = pd.DataFrame(k_fold_feature,columns = [f"variable{i}" for i in range(len(k_fold_feature[0]))])
+            if isinstance(self.feature_names,type(None)):
+                k_fold_feature = pd.DataFrame(k_fold_feature,columns = [f"variable{i}" for i in range(len(k_fold_feature[0]))])
+            else:
+                k_fold_feature = pd.DataFrame(k_fold_feature,columns = self.feature_names)
             
         
         if self.data_generator == None:
+            #print(type(self.target))
+            #print(self.target)
             predict_value = np.zeros(len(self.target))
             actual_value = np.zeros(len(self.target))
             k_fold_feature = self.feature
@@ -164,14 +177,10 @@ class Base:
                 predict_value[k_index == k_fold_mask] = mp(model)
                 actual_value[k_index == k_fold_mask] = test_target
                 
-        if hasattr(self,"total_history"): 
-            k_fold_result = pd.concat((k_fold_feature,pd.DataFrame({"predict_value":predict_value,"actual_value":actual_value})),axis = 1)
-            for param_value in parameter:
-                k_fold_result[param_value] = parameter[param_value]
-            if isinstance(self.total_history,str):
-                self.total_history = k_fold_result
-            else:
-                self.total_history = pd.concat((self.total_history,k_fold_result))
+        if isinstance(self.sample_df,str): 
+            k_fold_result = pd.concat((k_fold_feature,pd.DataFrame({"actual_value":actual_value})),axis = 1)
+            self.sample_df = k_fold_result
+                
 
         return pd.concat((k_fold_feature,pd.DataFrame({"predict_value":predict_value,"actual_value":actual_value})),axis = 1)
     
@@ -245,9 +254,7 @@ class Base:
                       "paramViolin":"Hyperparameter",
                       "scorrelationMap":"feature",
                       "pcorrelationMap":"feature",
-                      "performance_measure":"performance", 
                       'relief_importance_vis':'feature',
-                      'permutation_importance_vis':'feature'
                       }
         #method_name,class_name
         
@@ -278,21 +285,7 @@ class Base:
                     fig = methodcaller(method_name,self.search_history,param_list)(img_generation)
                     respond_dict[method_name] = fig.to_html(full_html=False)
                 elif graph_dict[method_name] == "feature":
-                    if 'relief' in method_name:
-                        X_train, X_valid, y_train, y_valid = self.train_valid_split(self.data_generator)
-
-                        fig = methodcaller(method_name, np.vstack([X_train, X_valid]), 
-                                           np.hstack([y_train, y_valid]))(img_generation)
-                    
-                    elif 'permutation' in method_name:
-                        X_train, X_valid, y_train, y_valid = self.train_valid_split(self.data_generator)
-                        # fit the model before perform permutation
-                        mc = methodcaller(self.fit_method,X_train,y_train)
-                        model = mc(self.model(**self.selected_parameter))
-
-                        fig = methodcaller(method_name, model, X_valid, y_valid)(img_generation)
-                    else:
-                        fig = methodcaller(method_name,self.total_history,len(self.selected_parameter))(img_generation)
+                    fig = methodcaller(method_name,self.sample_df)(img_generation)
                     respond_dict[method_name] = fig.to_html(full_html=False)
                 elif graph_dict[method_name] == "performance":
                     fig = methodcaller(method_name,self.total_history,self.prediction_type,param_list,param_combination)(img_generation)
