@@ -38,15 +38,17 @@ base = model_vistraining.Base(model = DecisionTreeClassifier,
                               parameter_dict = {"criterion":["gini", "entropy", "log_loss"],
                                                 "max_depth":[2,4,6,8,10,12],
                                                 "min_samples_split":[2,5,7],
-                                                "max_features":["sqrt","log2",0.83]},
+                                                "max_features":["sqrt","log2",0.83],
+                                                "min_impurity_decrease":[0.0,0.02,0.04]},
                                         data_generator=counter,
                                         prediction_type="multi_classification")
 
 
 
 
-base.GridSearch(time_for_each_param=1)
+base.RandomSearch(time_for_each_param=1)
 base.open_html_report()
+
 
 
         

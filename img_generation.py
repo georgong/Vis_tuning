@@ -32,9 +32,14 @@ parameter: total_history,prediction_type,param_dict
 return fig
 """
 
-def visualize_table(df):
-    column_list = list(df.columns)
-    df = df.T
+def visualize_table(raw_df,prediction_type):
+    def sort_table(raw_df,c):
+        try:
+            return raw_df.sort_values(by = c,ascending = (prediction_type != "classification")).T.values
+        except:
+            return raw_df.T.values
+    column_list = list(raw_df.columns)
+    df = raw_df.T
     fig = go.Figure(data=[go.Table(header=dict(values = column_list,
                                                align=['left','center'],
                                                font=dict(color='white', size=12),
@@ -46,7 +51,76 @@ def visualize_table(df):
                             #height=30
                             ))
                      ])
+        
+    fig.update_layout(
+    updatemenus=[
+        {
+            "buttons": [
+                {
+                    "label": c,
+                    "method": "update",
+                    "args": [
+                        {
+                            "cells": { 
+                                "values": df.values if c == "unsort" else
+                                    sort_table(raw_df,c)
+                            }
+                        }
+                    ],
+                }
+                for c in ["unsort"] + column_list
+            ],
+           
+        },
+    ]
+)
+    # fig.update_layout(
+    # annotations=[
+    #     dict(text="colorscale", x=0, xref="paper", y=1.06, yref="paper",
+    #                          align="left", showarrow=False),])
     fig.show()
+    return fig
+
+
+
+def visualize_interactive_table(df,split_index):
+    
+    column_list = list(df.columns)
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=column_list,
+                    align=['left', 'center'],
+                    font=dict(color='white', size=12),
+                    ),
+        cells=dict(values=df.T.to_numpy(),
+                   align=['left', 'center'],
+                   font_size=12,
+                   ))
+    ])
+    
+    
+    
+    # Define the initial layout
+    fig.update_layout(
+    updatemenus=[
+        {
+            "buttons": [
+                {
+                    "method": "restyle",
+                    "label": b["l"],
+                    "args": [{"cells": {"values": df.sort_values(b["l"],ascending = False).T.values}},[0]],
+                }
+                for b in [{"l": col_name} for col_name in df.columns[:-split_index]]
+            ],
+            "direction": "down",
+            "x":0.237,
+            "y": 1.085,
+        }
+    ]
+)
+    fig.show()
+    
+    # Define the table figure
+    
     return fig
 
 
@@ -137,8 +211,12 @@ def paramViolin(param_df,param_list):
         param1,evaluation = param_list
         fig = go.Figure()
         param_iter = param_df[param1].unique()
+        print(param_iter,param_df)
         for param_value in param_iter:
-            fig.add_trace(go.Violin(x=param_df[param1][param_df[param1] == param_value],
+            print(param_df[param1][param_df[param1] == param_value])
+            print(param_df[evaluation][param_df[param1] == param_value])
+            param_df[evaluation][param_df[param1] == param_value]
+            fig.add_trace(go.Violin(#x=param_df[param1][param_df[param1] == param_value],
                             y=param_df[evaluation][param_df[param1] == param_value],
                             name= "{}:{}".format(param1,param_value),
                             box_visible=True,
@@ -184,7 +262,7 @@ def relief_importance_vis(sample_df):
     print('Relief Algorithm')
     start_time = time.time()
     r.fit(feature, target)
-    print("Take {} ms".format(time.time()-start_time))
+    print("Take {} s".format(time.time()-start_time))
 
     relief_feature_importance = (
     pd.DataFrame(r.feature_importances_)

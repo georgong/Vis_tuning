@@ -14,6 +14,7 @@ from sklearn.metrics import confusion_matrix,precision_recall_curve,roc_curve,br
 from sklearn.model_selection import train_test_split
 import time
 import json as js
+from tqdm import tqdm
 
 
 
@@ -212,11 +213,14 @@ class Base:
             search_area = range(0,len(self.parameter_dict_list),1)
         if isinstance(search_area,tuple):
             search_area = range(search_area[0],search_area[1],1)
-        for i in search_area:
+        for i in tqdm(search_area):
             param = self.parameter_dict_list[i]
             for j in range(time_for_each_param):
+                time1 = time.time()
                 k_fold_result = self.k_fold(k,parameter = param)
+                time2 = time.time() - time1
                 result = self.evaluation_result(k_fold_result)
+                result.update({"time use":float(np.format_float_positional(time2,4))})
                 result.update(param)
                 if type(self.search_history) == str:
                     self.search_history = pd.DataFrame(data = result.values(),index = result.keys()).T
@@ -234,8 +238,13 @@ class Base:
         chosen_param = np.random.choice(self.parameter_dict_list,search_time,replace  = False)
         for param in chosen_param:
             for j in range(time_for_each_param):
+                time1 = time.time()
                 k_fold_result = self.k_fold(k,parameter = param)
+                time2 = time.time() - time1
                 result = self.evaluation_result(k_fold_result)
+                print(result)
+                result.update({"time use":
+                               float(np.format_float_positional(time2,4))})
                 result.update(param)
                 if type(self.search_history) == str:
                     self.search_history = pd.DataFrame(data = result.values(),index = result.keys()).T
@@ -245,9 +254,11 @@ class Base:
         self.search_history = self.search_history.reset_index(drop = True).fillna("None")
         self.evaluation_list = list(self.search_history.columns[:-len(self.selected_parameter)])
         self.param_list = [key for key,value in self.parameter_dict.items() if len(value) > 1]
+
+    def search_by_given_dict(self,param_dict):
+        pass 
     
-    
-    def open_html_report(self,initiation = True):
+    def open_html_report(self,initiation = True,port = 5000):
         # define the id,class of the iframe
         graph_dict = {"paramSurface":"Hyperparameter",
                       "paramhistogram":"Hyperparameter",
@@ -257,16 +268,16 @@ class Base:
                       'relief_importance_vis':'feature',
                       }
         #method_name,class_name
+        print(self.parameter_dict)
         
         
         html_param = {"evaluation_list":self.evaluation_list,
                       "param_dict_list":self.parameter_dict_list,
                       "param_list":self.param_list,
+                      "param_dict":self.parameter_dict,
                       "graph_dict":graph_dict}
         
         
-        if initiation:
-            self.GridSearch()
         app = Flask(__name__)
         app.jinja_env.auto_reload = True
         app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -278,7 +289,9 @@ class Base:
             json = request.json
             respond_dict = {}
             param_list = json["parameter"] + [json["evaluation"]]
-            param_combination = eval(json["param_combination"])
+            print(param_list)
+
+            #param_combination = eval(json["param_combination"])
             #fix: eval() is dangerous
             for method_name in graph_dict:
                 if graph_dict[method_name] == "Hyperparameter":
@@ -297,34 +310,40 @@ class Base:
             return respond_dict
         @app.route("/rsCommand",methods = ["GET","POST"])
         def rsearchRspond():
-            json = request.json
-            
+            param_dict = request.json
+            self.param_dict = {k:eval(v) for k,v in param_dict.items()}
+            keys, values = zip(*self.param_dict.items())
+            self.parameter_dict_list = [dict(zip(keys, v)) for v in itertools.product(*values)]
             print("Random Search")
             cur_time = time.time()
             self.RandomSearch()
-            print("Take {} ms".format(time.time()-cur_time))
+            print("Take {} s".format(time.time()-cur_time))
             
             
             return "ok"
         @app.route("/gsCommand",methods = ["GET","POST"])
         def gsearchRspond():
-            json = request.json
+            param_dict = request.json
+            self.param_dict = {k:eval(v) for k,v in param_dict.items()}
+            keys, values = zip(*self.param_dict.items())
+            self.parameter_dict_list = [dict(zip(keys, v)) for v in itertools.product(*values)]
             print("Grid Search")
             cur_time = time.time()
             self.GridSearch()
-            print("Take {} ms".format(time.time()-cur_time))
+            print("Take {} s".format(time.time()-cur_time))
             return "ok"
         @app.route("/displayCommand",methods = ["GET","POST"])
         def displayTable():
             json = request.json
             if self.prediction_type == "regression":
-                return img_generation.visualize_table(self.search_history.sort_values(
-                by=self.search_history.columns[0],ascending = True)).to_html()
+                return img_generation.visualize_table(self.search_history,prediction_type ="regression").to_html()
             else:
-                return img_generation.visualize_table(self.search_history.sort_values(
-                by=self.search_history.columns[0],ascending = False)).to_html()
-        
-        app.run()
+                return img_generation.visualize_table(self.search_history,prediction_type ="classification").to_html()
+        import webbrowser
+        webbrowser.open(f'http://127.0.0.1:{port}/index',new = 2)
+        app.run(host = "0.0.0.0",port = port)
+
+
         
         
     
